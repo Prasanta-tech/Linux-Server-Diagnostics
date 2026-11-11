@@ -14,7 +14,7 @@ services:
         VCS_REF: "${VCS_REF:-unknown}"
         BUILD_DATE: "${BUILD_DATE:-unknown}"
     image: phoenixauto-ops:latest
-    container_name: phoenixops-monitor
+    container_name: linux-server-diagnostics
     
     # Load environment variables from .env file
     env_file:
