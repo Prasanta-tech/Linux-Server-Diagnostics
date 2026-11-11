@@ -2,8 +2,8 @@
 
 > **Automated Server Health Monitoring, Alerting & Self-Healing System** — a production-oriented Python/Bash system that watches your infrastructure, fires multi-channel alerts, and autonomously remediates failures without human intervention.
 
-[![Application CI](https://github.com/Prasanta67/Linux-Server-Diagnostics/actions/workflows/ci.yml/badge.svg)](https://github.com/Prasanta67/Linux-Server-Diagnostics/actions/workflows/ci.yml)
-[![Docker CI](https://github.com/Prasanta67/Linux-Server-Diagnostics/actions/workflows/docker-ci.yml/badge.svg)](https://github.com/Prasanta67/Linux-Server-Diagnostics/actions/workflows/docker-ci.yml)
+[![Application CI](https://github.com/Prasanta-tech/Linux-Server-Diagnostics/actions/workflows/ci.yml/badge.svg)](https://github.com/Prasanta-tech/Linux-Server-Diagnostics/actions/workflows/ci.yml)
+[![Docker CI](https://github.com/Prasanta-tech/Linux-Server-Diagnostics/actions/workflows/docker-ci.yml/badge.svg)](https://github.com/Prasanta-tech/Linux-Server-Diagnostics/actions/workflows/docker-ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%2F%20Ubuntu-orange?logo=linux)](https://ubuntu.com)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
@@ -210,5 +210,5 @@ pytest --cov=app --cov-report=term-missing
 
 **Prasanta Satapathy** — Backend Engineer
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin)](https://linkedin.com/in/Prasantaul-islam-00b083373)
-[![GitHub](https://img.shields.io/badge/GitHub-Follow-black?logo=github)](https://github.com/Prasanta67)
+
+[![GitHub](https://img.shields.io/badge/GitHub-Follow-black?logo=github)](https://github.com/Prasanta-tech)
