@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Structured Logger
+linux-server-diagnostics Structured Logger
 =================================
 
 Centralized, production-ready logging utility for the entire project.
@@ -74,7 +74,7 @@ class JSONFormatter(logging.Formatter):
 
 
 class StructuredLogger:
-    """Singleton structured logger for PhoenixAuto-Ops.
+    """Singleton structured logger for linux-server-diagnostics.
 
     Ensures only one logger instance exists.
     Loads log level from the environment with fallback.
@@ -130,7 +130,7 @@ class StructuredLogger:
         # File Handler (JSON + rotation) with try-except
         try:
             file_handler = TimedRotatingFileHandler(
-                filename=log_dir / "phoenixauto-ops.log",
+                filename=log_dir / "linux-server-diagnostics.log",
                 when="midnight",
                 interval=1,
                 backupCount=7,

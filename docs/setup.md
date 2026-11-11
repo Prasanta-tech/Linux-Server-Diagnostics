@@ -1,6 +1,6 @@
-# 🚀 PhoenixAuto-Ops — Setup Guide
+# 🚀 linux-server-diagnostics — Setup Guide
 
-Complete installation, configuration, and verification guide for running PhoenixAuto-Ops on a Linux server.
+Complete installation, configuration, and verification guide for running linux-server-diagnostics on a Linux server.
 
 ---
 
@@ -30,8 +30,8 @@ Before starting, confirm the following are available on your server:
 ## Step 1 — Clone the Repository
 
 ```bash
-git clone https://github.com/<your-username>/phoenixauto-ops.git
-cd phoenixauto-ops
+git clone https://github.com/<your-username>/linux-server-diagnostics.git
+cd linux-server-diagnostics
 ```
 
 ---
@@ -133,11 +133,11 @@ sudo visudo -f /etc/sudoers.d/phoenixautoops
 Add these lines (replace `youruser` with your actual Linux username):
 
 ```bash
-# PhoenixAuto-Ops — Limited sudo for healing actions
+# linux-server-diagnostics — Limited sudo for healing actions
 youruser ALL=(ALL) NOPASSWD: /bin/systemctl restart *
 youruser ALL=(ALL) NOPASSWD: /bin/systemctl status *
-youruser ALL=(ALL) NOPASSWD: /path/to/phoenixauto-ops/scripts/cleanup.sh
-youruser ALL=(ALL) NOPASSWD: /path/to/phoenixauto-ops/scripts/service_manager.sh
+youruser ALL=(ALL) NOPASSWD: /path/to/linux-server-diagnostics/scripts/cleanup.sh
+youruser ALL=(ALL) NOPASSWD: /path/to/linux-server-diagnostics/scripts/service_manager.sh
 ```
 
 Save and verify the file syntax:
@@ -160,7 +160,7 @@ youruser ALL=(ALL) NOPASSWD: /usr/bin/apt-get clean -y
 youruser ALL=(ALL) NOPASSWD: /usr/bin/tee /proc/sys/vm/drop_caches
 ```
 
-> **Principle of least privilege:** these rules allow only the specific commands PhoenixAuto-Ops needs. Never use `NOPASSWD: ALL` for a monitoring process.
+> **Principle of least privilege:** these rules allow only the specific commands linux-server-diagnostics needs. Never use `NOPASSWD: ALL` for a monitoring process.
 
 ---
 
@@ -181,7 +181,7 @@ crontab -l | grep watchdog.sh
 Expected output:
 
 ```
-*/5 * * * * /path/to/phoenixauto-ops/scripts/watchdog.sh >> /path/to/phoenixauto-ops/logs/cron.log 2>&1
+*/5 * * * * /path/to/linux-server-diagnostics/scripts/watchdog.sh >> /path/to/linux-server-diagnostics/logs/cron.log 2>&1
 ```
 
 The default interval is every 5 minutes. To change it, edit the `CRON_JOB` line in `cron/setup_cron.sh` before running:
@@ -196,15 +196,15 @@ CRON_JOB="*/5 * * * * $WRAPPER_SCRIPT >> $LOG_DIR/cron.log 2>&1"
 ## Step 6.5 — (Optional) Run the Engine as a systemd Service
 
 ```ini
-# /etc/systemd/system/phoenixauto-ops.service
+# /etc/systemd/system/linux-server-diagnostics.service
 [Unit]
-Description=PhoenixAuto-Ops monitoring engine
+Description=linux-server-diagnostics monitoring engine
 After=network-online.target
 
 [Service]
 User=youruser
-WorkingDirectory=/path/to/phoenixauto-ops
-ExecStart=/path/to/phoenixauto-ops/venv/bin/python -u -m app.main
+WorkingDirectory=/path/to/linux-server-diagnostics
+ExecStart=/path/to/linux-server-diagnostics/venv/bin/python -u -m app.main
 Restart=on-failure
 RestartSec=10
 TimeoutStopSec=40
@@ -214,7 +214,7 @@ WantedBy=multi-user.target
 ```
 
 ```bash
-sudo systemctl daemon-reload && sudo systemctl enable --now phoenixauto-ops
+sudo systemctl daemon-reload && sudo systemctl enable --now linux-server-diagnostics
 ```
 
 ---
@@ -228,9 +228,9 @@ chmod +x scripts/watchdog.sh
 crontab -e
 ```
 
-(Already installed by `cron/setup_cron.sh` / `setup.sh`; add it manually only if you skipped Step 6: `*/5 * * * * /path/to/phoenixauto-ops/scripts/watchdog.sh`)
+(Already installed by `cron/setup_cron.sh` / `setup.sh`; add it manually only if you skipped Step 6: `*/5 * * * * /path/to/linux-server-diagnostics/scripts/watchdog.sh`)
 
-It reads `SLACK_WEBHOOK_URL` from `.env` directly and alerts if `logs/phoenixauto-ops.log` hasn't been written to in 5 minutes.
+It reads `SLACK_WEBHOOK_URL` from `.env` directly and alerts if `logs/linux-server-diagnostics.log` hasn't been written to in 5 minutes.
 
 ---
 
@@ -254,7 +254,7 @@ Expected console output:
 **Watch live JSON logs:**
 
 ```bash
-tail -f logs/phoenixauto-ops.log
+tail -f logs/linux-server-diagnostics.log
 ```
 
 **Test via the production wrapper:**
@@ -269,11 +269,11 @@ bash scripts/run_monitor.sh
 
 ## Docker Setup (Alternative)
 
-Steps 1–7 above set up PhoenixAuto-Ops directly on the host using a Python virtual environment. If a containerized deployment is preferred instead, Docker and Docker Compose replace Steps 2, 5, and 6 (venv, sudoers, and cron are not needed inside the container):
+Steps 1–7 above set up linux-server-diagnostics directly on the host using a Python virtual environment. If a containerized deployment is preferred instead, Docker and Docker Compose replace Steps 2, 5, and 6 (venv, sudoers, and cron are not needed inside the container):
 
 ```bash
-git clone https://github.com/didar67/phoenixauto-ops.git
-cd phoenixauto-ops
+git clone https://github.com/didar67/linux-server-diagnostics.git
+cd linux-server-diagnostics
 
 cp .env.example .env
 nano .env   # same secrets as Step 3 above
@@ -317,7 +317,7 @@ If running via cron and seeing this error in logs, confirm `run_monitor.sh` is a
 
 ```bash
 # Correct in run_monitor.sh — absolute path, not relative
-source /home/youruser/phoenixauto-ops/venv/bin/activate
+source /home/youruser/linux-server-diagnostics/venv/bin/activate
 ```
 
 ### Cron job not appearing in `crontab -l`
@@ -360,7 +360,7 @@ mkdir -p logs
 ## Uninstalling the Cron Job
 
 ```bash
-# Remove only the PhoenixAuto-Ops entry from crontab
+# Remove only the linux-server-diagnostics entry from crontab
 crontab -l | grep -v 'scripts/watchdog.sh' | crontab -
 crontab -l   # Confirm it's gone
 ```

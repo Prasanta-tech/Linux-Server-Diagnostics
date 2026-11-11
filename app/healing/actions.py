@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Healing Actions
+linux-server-diagnostics Healing Actions
 ===============================
 
 Concrete healing actions that call secure shell scripts or system commands.

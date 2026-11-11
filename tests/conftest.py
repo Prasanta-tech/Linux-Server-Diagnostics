@@ -1,5 +1,5 @@
 """
-Shared pytest fixtures for PhoenixAuto-Ops.
+Shared pytest fixtures for linux-server-diagnostics.
 
 Most components pull config through the singleton `config` object created
 at import time in app/utils/config_loader.py (it reads .env and

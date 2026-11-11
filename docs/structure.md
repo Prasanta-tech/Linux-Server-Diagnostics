@@ -1,4 +1,4 @@
-# 📁 PhoenixAuto-Ops — Project Structure
+# 📁 linux-server-diagnostics — Project Structure
 
 This document explains every folder and file in the repository: what it does, why it exists, and how it fits into the system.
 
@@ -7,7 +7,7 @@ This document explains every folder and file in the repository: what it does, wh
 ## Full Tree
 
 ```
-phoenixauto-ops/
+linux-server-diagnostics/
 │
 ├── .github/
 │   └── workflows/                  # ci.yml (app CI), docker-ci.yml (Docker CI) — see docs/ci.md
@@ -103,7 +103,7 @@ Does not contain business logic — that all lives in `engine.py`.
 
 ### `app/engine.py`
 
-The brain of PhoenixAuto-Ops. `MonitoringEngine` drives a single execution cycle:
+The brain of linux-server-diagnostics. `MonitoringEngine` drives a single execution cycle:
 
 1. Collect metric snapshot from all enabled monitors
 2. Track each metric's consecutive-breach streak against its configured threshold - a single transient spike doesn't act; only a breach sustained for `auto_healing.consecutive_breaches_required` consecutive cycles does
@@ -175,7 +175,7 @@ Also bridges `telegram.*`/`slack.*`/`email.*` credentials from `os.environ` (pop
 
 `StructuredLogger` (a singleton) configures:
 - A `StreamHandler` with a human-readable formatter for console output
-- A `TimedRotatingFileHandler` writing daily-rotated JSON to `logs/phoenixauto-ops.log` (7 backups)
+- A `TimedRotatingFileHandler` writing daily-rotated JSON to `logs/linux-server-diagnostics.log` (7 backups)
 - Log level read from the `LOG_LEVEL` environment variable (defaults to `INFO`)
 
 The JSON formatter writes `timestamp`, `level`, `message`, `module`, `function` and `line` for every record, plus any keyword arguments passed to the logger (e.g. `logger.info("...", cpu=45.2)`).
@@ -207,7 +207,7 @@ Foreground launcher (activates the venv, then runs the engine until stopped):
 
 ### `scripts/watchdog.sh`
 
-Runs independently of the main engine, via its own separate cron entry. Checks whether `logs/phoenixauto-ops.log` has been written to within the last 5 minutes; if not, sends a Slack alert since the engine process itself may have crashed or hung. This exists because the main engine has no way to detect or report its own failure - a crashed engine simply stops logging, silently.
+Runs independently of the main engine, via its own separate cron entry. Checks whether `logs/linux-server-diagnostics.log` has been written to within the last 5 minutes; if not, sends a Slack alert since the engine process itself may have crashed or hung. This exists because the main engine has no way to detect or report its own failure - a crashed engine simply stops logging, silently.
 
 ### `.github/workflows/ci.yml` and `.github/workflows/docker-ci.yml`
 
@@ -215,7 +215,7 @@ GitHub Actions pipelines validating every change before merge — lint/format, t
 
 ### `cron/setup_cron.sh`
 
-Reads the current user's crontab, checks whether a PhoenixAuto-Ops entry already exists (grep on a comment marker), and adds the `scripts/watchdog.sh` job (every 5 minutes) only if absent. This makes it safe to re-run after updates without creating duplicate entries. Default schedule is `*/5 * * * *` — configurable by editing the script variable `CRON_SCHEDULE` before running.
+Reads the current user's crontab, checks whether a linux-server-diagnostics entry already exists (grep on a comment marker), and adds the `scripts/watchdog.sh` job (every 5 minutes) only if absent. This makes it safe to re-run after updates without creating duplicate entries. Default schedule is `*/5 * * * *` — configurable by editing the script variable `CRON_SCHEDULE` before running.
 
 ### `config/thresholds.yaml`
 

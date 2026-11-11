@@ -1,7 +1,7 @@
-# ⚙️ PhoenixAuto-Ops — Continuous Integration
+# ⚙️ linux-server-diagnostics — Continuous Integration
 
 This document describes the automated CI implementation that validates every
-change to PhoenixAuto-Ops before it reaches `main`. It covers what the two
+change to linux-server-diagnostics before it reaches `main`. It covers what the two
 workflows actually do, why they're structured the way they are, and what is
 intentionally *not* part of this stage yet.
 
@@ -12,7 +12,7 @@ actual `.github/workflows/` files.
 
 ## CI Overview
 
-PhoenixAuto-Ops reached a point where Phase 1 (core monitoring/alerting/
+linux-server-diagnostics reached a point where Phase 1 (core monitoring/alerting/
 healing) and Phase 2 (Docker) were both complete and manually verified —
 see [docs/development-workflow.md](development-workflow.md). Manual
 verification doesn't scale: every new alert channel, healing action, or
@@ -216,7 +216,7 @@ image metadata:
    freshness check, not an import-only smoke test.
 4. **Startup log assertions** — greps container logs for the real log
    lines emitted by `app/main.py` and `app/engine.py`
-   (`"PhoenixAuto-Ops starting"`, `"Monitoring engine initialized"`,
+   (`"linux-server-diagnostics starting"`, `"Monitoring engine initialized"`,
    `"Entering continuous monitoring mode"`).
 5. **Graceful shutdown** — `docker stop --time 40` (matching
    `docker-compose.yml`'s `stop_grace_period: 40s`) sends SIGTERM, then
@@ -270,7 +270,7 @@ transferring the built image between jobs as a workflow artifact.
 
 ### Image tagging
 
-Images are tagged `phoenixauto-ops:ci-<commit-sha>` — immutable per run,
+Images are tagged `linux-server-diagnostics:ci-<commit-sha>` — immutable per run,
 never `latest`, so two concurrent runs on different branches can't collide
 in the same runner's local image cache.
 

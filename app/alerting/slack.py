@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Slack Alert Sender
+linux-server-diagnostics Slack Alert Sender
 
 Concrete implementation of BaseAlertSender for Slack Webhook.
 Sends formatted alerts to a Slack channel using Incoming Webhook.

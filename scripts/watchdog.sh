@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ======================================================================
-# PhoenixAuto-Ops: Watchdog Script
+# linux-server-diagnostics: Watchdog Script
 # Purpose: Detect if the main monitoring engine has stopped writing logs
 #           (crashed, hung, or killed) - runs independently via its own
 #           cron entry, so a dead engine can still trigger a notification.
@@ -12,7 +12,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 PROJECT_ROOT=$(pwd)
 
-LOG_FILE="$PROJECT_ROOT/logs/phoenixauto-ops.log"
+LOG_FILE="$PROJECT_ROOT/logs/linux-server-diagnostics.log"
 STALE_MINUTES=5
 WATCHDOG_LOG="$PROJECT_ROOT/logs/watchdog.log"
 
@@ -39,7 +39,7 @@ if [[ -z "$(find "$LOG_FILE" -mmin -"$STALE_MINUTES")" ]]; then
 
     if [[ -n "${SLACK_WEBHOOK_URL:-}" ]]; then
         curl -s -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"⚠️ PhoenixAuto-Ops watchdog: no log activity in ${STALE_MINUTES} min on $(hostname) - engine may be down\"}" \
+            --data "{\"text\":\"⚠️ linux-server-diagnostics watchdog: no log activity in ${STALE_MINUTES} min on $(hostname) - engine may be down\"}" \
             "$SLACK_WEBHOOK_URL" > /dev/null || log "WARNING: failed to send watchdog alert to Slack"
     else
         log "WARNING: SLACK_WEBHOOK_URL not set - cannot send watchdog alert"

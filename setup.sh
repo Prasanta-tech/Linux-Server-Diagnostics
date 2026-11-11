@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ======================================================================
-# PhoenixAuto-Ops: One-Command Setup Script
+# linux-server-diagnostics: One-Command Setup Script
 # Purpose: Automates project setup (venv, dependencies, permissions, cron)
 # Usage:   sudo ./setup.sh
 # Features: idempotent, logging, validation, safe execution
@@ -16,7 +16,7 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$level] $msg" | tee -a "$LOG_FILE"
 }
 
-log "INFO" "Starting PhoenixAuto-Ops setup process"
+log "INFO" "Starting linux-server-diagnostics setup process"
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -64,7 +64,7 @@ else
     log "WARNING" "cron/setup_cron.sh not found. Skipping cron setup."
 fi
 
-log "SUCCESS" "PhoenixAuto-Ops setup completed successfully!"
+log "SUCCESS" "linux-server-diagnostics setup completed successfully!"
 log "INFO" "To run manually: source venv/bin/activate && python3 -m app.main"
 log "INFO" "Watchdog cron is active. Start the engine with: python3 -m app.main (or the systemd unit in docs/setup.md)."
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ======================================================================
-# PhoenixAuto-Ops: Service Manager Script
+# linux-server-diagnostics: Service Manager Script
 # Purpose:  Safely start/stop/restart/status systemd services.
 #           Called from Python healing module via subprocess.
 # Usage:    sudo ./service_manager.sh <action> <service_name>

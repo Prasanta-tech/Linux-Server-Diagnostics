@@ -1,6 +1,6 @@
-# ⚙️ PhoenixAuto-Ops — Configuration Reference
+# ⚙️ linux-server-diagnostics — Configuration Reference
 
-PhoenixAuto-Ops uses a two-layer configuration system: a YAML file for operational parameters and a `.env` file for runtime secrets. This document covers every configurable value, how the two layers are merged at runtime, and best practices for managing config across environments.
+linux-server-diagnostics uses a two-layer configuration system: a YAML file for operational parameters and a `.env` file for runtime secrets. This document covers every configurable value, how the two layers are merged at runtime, and best practices for managing config across environments.
 
 ---
 
@@ -68,7 +68,7 @@ PhoenixAuto-Ops uses a two-layer configuration system: a YAML file for operation
 ### Complete File
 
 ```dotenv
-# .env — runtime secrets for PhoenixAuto-Ops
+# .env — runtime secrets for linux-server-diagnostics
 # Copy from .env.example: cp .env.example .env
 # This file is listed in .gitignore — NEVER commit it.
 
@@ -108,7 +108,7 @@ ALERT_EMAIL_RECIPIENTS=ops@yourdomain.com,oncall@yourdomain.com
 | `SMTP_PASSWORD` | If using Email | App password or SMTP relay credential |
 | `ALERT_EMAIL_RECIPIENTS` | If using Email | Comma-separated list of recipient addresses |
 
-At least one alert channel must be fully configured for PhoenixAuto-Ops to deliver notifications. Unconfigured channels are skipped at runtime with a `WARNING` log entry.
+At least one alert channel must be fully configured for linux-server-diagnostics to deliver notifications. Unconfigured channels are skipped at runtime with a `WARNING` log entry.
 
 ---
 
@@ -148,7 +148,7 @@ Components access credentials via `config.get('telegram.bot_token')` — secrets
 
 ## Environment-Specific Configuration
 
-PhoenixAuto-Ops does not have a built-in environment flag, but the two-layer design makes per-environment configuration easy to manage:
+linux-server-diagnostics does not have a built-in environment flag, but the two-layer design makes per-environment configuration easy to manage:
 
 **Development server** — higher thresholds, dry-run enabled, single alert channel:
 
@@ -233,7 +233,7 @@ git commit -m "Remove accidentally tracked .env secrets file"
 
 - **Cooldown asymmetry:** As shipped, `alerting.cooldown_minutes` defaults to 15 minutes (900s, code fallback) while `auto_healing.cooldown_seconds` defaults to 5 minutes (300s, set in `thresholds.yaml`) — healing can currently retry up to 3x more often than a fresh alert fires for the same metric. If that's not the intended behavior for a given deployment, either raise `auto_healing.cooldown_seconds` to 900+ or explicitly set a shorter `alerting.cooldown_minutes` in `thresholds.yaml` so the two stay aligned.
 
-- **Validate dry-run first:** Every time `thresholds.yaml` is changed on a production server, temporarily set `dry_run: true`, restart the engine (config is read once at startup), let a breach run, inspect `logs/phoenixauto-ops.log` to confirm which actions would have fired, then restore `dry_run: false`.
+- **Validate dry-run first:** Every time `thresholds.yaml` is changed on a production server, temporarily set `dry_run: true`, restart the engine (config is read once at startup), let a breach run, inspect `logs/linux-server-diagnostics.log` to confirm which actions would have fired, then restore `dry_run: false`.
 
 - **Disk scope:** Only the root filesystem (`/`) is monitored today; other mounts such as `/data` are not checked (possible future extension).
 

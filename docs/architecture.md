@@ -1,6 +1,6 @@
-# 🏗️ PhoenixAuto-Ops — System Architecture
+# 🏗️ linux-server-diagnostics — System Architecture
 
-This document covers the internal design of PhoenixAuto-Ops: component responsibilities, execution flow, design patterns, and extension points.
+This document covers the internal design of linux-server-diagnostics: component responsibilities, execution flow, design patterns, and extension points.
 
 ---
 
@@ -8,7 +8,7 @@ This document covers the internal design of PhoenixAuto-Ops: component responsib
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                        PhoenixAuto-Ops Runtime                           │
+│                        linux-server-diagnostics Runtime                           │
 │                                                                          │
 │   systemd / Docker / sh                                                  │
 │           │                                                              │
@@ -37,7 +37,7 @@ This document covers the internal design of PhoenixAuto-Ops: component responsib
 │   ┌──────────────────────────────────────────────────────────────┐  │   │
 │   │  app/utils/                                                  │  │   │
 │   │  config_loader.py ← config/thresholds.yaml + .env           │  │   │
-│   │  logger.py        → logs/phoenixauto-ops.log                 │◀─┘   │
+│   │  logger.py        → logs/linux-server-diagnostics.log                 │◀─┘   │
 │   └──────────────────────────────────────────────────────────────┘      │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
@@ -94,7 +94,7 @@ Implemented actions include service restart, cache cleanup, and log rotation. `k
 `app/utils/` contains shared infrastructure helpers.
 
 - `config_loader.py` loads `config/thresholds.yaml` and merges environment variables from `.env` into a single merged config dictionary.
-- `logger.py` configures console logging and a rotating JSON file logger at `logs/phoenixauto-ops.log`, with log level read from the `LOG_LEVEL` environment variable.
+- `logger.py` configures console logging and a rotating JSON file logger at `logs/linux-server-diagnostics.log`, with log level read from the `LOG_LEVEL` environment variable.
 
 ---
 
@@ -138,7 +138,7 @@ Step 4 — HEAL (per-metric isolated, dry-run / retry-aware)
                 └── exhausted → log error for that action only, continue
 
 Step 5 — LOG
-  all steps emit structured JSON to logs/phoenixauto-ops.log
+  all steps emit structured JSON to logs/linux-server-diagnostics.log
   the loop then sleeps cycle_interval_seconds and repeats until SIGTERM/SIGINT.
 ```
 
@@ -146,7 +146,7 @@ Step 5 — LOG
 
 ## Key Design Principles
 
-PhoenixAuto-Ops is designed around modularity, separation of concerns, and configuration-driven behavior.
+linux-server-diagnostics is designed around modularity, separation of concerns, and configuration-driven behavior.
 
 - Monitoring, alerting, and healing are isolated into separate layers.
 - Each layer exposes a small interface through abstract base classes.
@@ -206,7 +206,7 @@ New functionality can be added without changing the core orchestration logic.
 
 ## Containerized Runtime
 
-PhoenixAuto-Ops runs identically on bare metal and inside Docker — the `monitoring/ → alerting/ → healing/` cycle described above does not change. Containerization changes *how* the engine is invoked and *where* its metric sources point, not the engine itself.
+linux-server-diagnostics runs identically on bare metal and inside Docker — the `monitoring/ → alerting/ → healing/` cycle described above does not change. Containerization changes *how* the engine is invoked and *where* its metric sources point, not the engine itself.
 
 ```text
 ┌───────────────────────────────┐         ┌───────────────────────────────┐

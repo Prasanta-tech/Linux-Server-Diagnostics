@@ -1,5 +1,5 @@
 """
-Alerting package for PhoenixAuto-Ops.
+Alerting package for linux-server-diagnostics.
 Exposes key classes for easy import.
 """
 

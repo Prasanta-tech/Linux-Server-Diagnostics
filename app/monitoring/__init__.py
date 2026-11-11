@@ -1,5 +1,5 @@
 """
-Monitoring package for PhoenixAuto-Ops.
+Monitoring package for linux-server-diagnostics.
 Exposes key classes for easy import.
 """
 

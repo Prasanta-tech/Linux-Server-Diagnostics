@@ -1,5 +1,5 @@
-# PhoenixAuto-Ops: Monitoring Thresholds Configuration
-# This YAML file defines the thresholds for various monitoring metrics in the PhoenixAuto-Ops system.
+# linux-server-diagnostics: Monitoring Thresholds Configuration
+# This YAML file defines the thresholds for various monitoring metrics in the linux-server-diagnostics system.
 # All values are in percentages (%) or absolute numbers as specified.
 
 thresholds:

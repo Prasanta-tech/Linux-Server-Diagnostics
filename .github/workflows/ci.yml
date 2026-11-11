@@ -31,7 +31,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Pinned to match the interpreter PhoenixAuto-Ops actually ships on - see
+  # Pinned to match the interpreter linux-server-diagnostics actually ships on - see
   # the builder/runtime stages in Dockerfile (python:3.11-slim). Testing
   # against a different interpreter than the one running in production
   # would validate the wrong thing.

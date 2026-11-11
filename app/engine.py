@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Engine
+linux-server-diagnostics Engine
 =====================
 
 Core orchestration logic for the entire system.

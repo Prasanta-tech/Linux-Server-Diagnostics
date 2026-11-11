@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Monitoring Base
+linux-server-diagnostics Monitoring Base
 
 Abstract base class for all metric collectors.
 Provides common functionality like threshold lookup,

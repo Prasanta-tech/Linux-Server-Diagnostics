@@ -1,6 +1,6 @@
-# 🐳 PhoenixAuto-Ops — Docker & Containerization
+# 🐳 linux-server-diagnostics — Docker & Containerization
 
-This document covers the containerized deployment of PhoenixAuto-Ops: the multi-stage Dockerfile, `docker-compose.yml` service definition, host-system monitoring design, lifecycle handling, and a known platform limitation identified during runtime testing.
+This document covers the containerized deployment of linux-server-diagnostics: the multi-stage Dockerfile, `docker-compose.yml` service definition, host-system monitoring design, lifecycle handling, and a known platform limitation identified during runtime testing.
 
 Docker packages the same `MonitoringEngine` cycle described in [docs/architecture.md](architecture.md) — nothing about the monitor → evaluate → alert → heal flow changes inside a container. What Docker adds is process isolation, a non-root runtime, and (optionally) the ability to observe the *host* machine's vitals from inside a container rather than the container's own namespace.
 
@@ -81,13 +81,13 @@ ENTRYPOINT ["python"]
 CMD ["-u", "-m", "app.main"]
 ```
 
-Run as a module (`-m app.main`) rather than a direct script path, matching how the venv-based setup runs it (see [docs/setup.md](setup.md#step-7--verify-the-full-stack)). Splitting `ENTRYPOINT`/`CMD` lets the module be overridden at `docker run` time (e.g. `docker run phoenixauto-ops -m pytest`) without rebuilding.
+Run as a module (`-m app.main`) rather than a direct script path, matching how the venv-based setup runs it (see [docs/setup.md](setup.md#step-7--verify-the-full-stack)). Splitting `ENTRYPOINT`/`CMD` lets the module be overridden at `docker run` time (e.g. `docker run linux-server-diagnostics -m pytest`) without rebuilding.
 
 ### Healthcheck
 
 ```dockerfile
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD find /app/logs/phoenixauto-ops.log -mmin -2 | grep -q . || exit 1
+    CMD find /app/logs/linux-server-diagnostics.log -mmin -2 | grep -q . || exit 1
 ```
 
 Checks that the structured log file (see [docs/architecture.md](architecture.md#apputils--support-layer)) has been touched within the last two monitoring cycles at the default `cycle_interval_seconds`. An import-only healthcheck (`python -c "import app.engine"`) would report healthy even if the monitoring loop had hung mid-cycle — checking for a recent log write is a genuine liveness signal, not just an import smoke test.
@@ -101,7 +101,7 @@ ARG VERSION=0.1.0
 ARG VCS_REF=unknown
 ARG BUILD_DATE=unknown
 
-LABEL org.opencontainers.image.title="PhoenixAuto-Ops" \
+LABEL org.opencontainers.image.title="linux-server-diagnostics" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${VCS_REF}" \
       org.opencontainers.image.created="${BUILD_DATE}"
@@ -138,13 +138,13 @@ docker compose build
 |---------|-------|--------|
 | `restart` | `unless-stopped` | Recovers from crashes without manual intervention, but respects an intentional `docker compose down` |
 | `stop_grace_period` | `40s` | `HealingActions._execute_command()` gives shell scripts up to 30s (see [docs/architecture.md](architecture.md#apphealing--remediation-layer)); the default 10s grace period could get a mid-healing cycle SIGKILLed before it finishes cleanly |
-| `logging.driver` | `json-file`, `max-size: 10m`, `max-file: 3` | Caps on-disk log growth — the same rotation concern `logger.py` already handles for `logs/phoenixauto-ops.log`, applied at the Docker layer for stdout |
+| `logging.driver` | `json-file`, `max-size: 10m`, `max-file: 3` | Caps on-disk log growth — the same rotation concern `logger.py` already handles for `logs/linux-server-diagnostics.log`, applied at the Docker layer for stdout |
 
 ---
 
 ## Host System Monitoring
 
-By default, a containerized process only sees its own namespace — `psutil.cpu_percent()`, `virtual_memory()`, etc. would describe the *container*, not the machine it runs on. Since PhoenixAuto-Ops exists to monitor a server, self-monitoring the container defeats the purpose.
+By default, a containerized process only sees its own namespace — `psutil.cpu_percent()`, `virtual_memory()`, etc. would describe the *container*, not the machine it runs on. Since linux-server-diagnostics exists to monitor a server, self-monitoring the container defeats the purpose.
 
 ### Design
 
@@ -234,8 +234,8 @@ WARNING | Failed to get connections: [Errno 2] No such file or directory: '/host
 ## Running with Docker
 
 ```bash
-git clone https://github.com/didar67/phoenixauto-ops.git
-cd phoenixauto-ops
+git clone https://github.com/didar67/linux-server-diagnostics.git
+cd linux-server-diagnostics
 
 cp .env.example .env
 nano .env   # same secrets as the venv-based setup — see docs/setup.md

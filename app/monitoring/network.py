@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Network Metrics Collector
+linux-server-diagnostics Network Metrics Collector
 
 Collects network-related system metrics using psutil:
 - Bytes sent/received (per second)

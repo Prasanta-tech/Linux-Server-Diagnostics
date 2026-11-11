@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Healing Base
+linux-server-diagnostics Healing Base
 
 Abstract base class for all self-healing actions.
 Provides common functionality like dry-run mode,

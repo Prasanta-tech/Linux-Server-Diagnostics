@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Telegram Alert Sender
+linux-server-diagnostics Telegram Alert Sender
 
 Concrete implementation of BaseAlertSender for Telegram Bot API.
 Sends formatted alerts to a specific chat/channel with proper error handling.

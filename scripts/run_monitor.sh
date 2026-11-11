@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ======================================================================
-# PhoenixAuto-Ops: Run Monitor Wrapper
+# linux-server-diagnostics: Run Monitor Wrapper
 # Purpose: Reliable wrapper to start the Python monitoring engine.
 # ======================================================================
 
@@ -19,7 +19,7 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$level] $msg" | tee -a "$LOG_FILE"
 }
 
-log "INFO" "Starting PhoenixAuto-Ops monitoring wrapper"
+log "INFO" "Starting linux-server-diagnostics monitoring wrapper"
 
 # Check and activate venv
 if [[ ! -d "$VENV_PATH" ]]; then

@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops System Metrics Collector
+linux-server-diagnostics System Metrics Collector
 
 Collects core system health metrics using psutil:
 - CPU usage (%)

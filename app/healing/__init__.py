@@ -1,5 +1,5 @@
 """
-Healing package for PhoenixAuto-Ops.
+Healing package for linux-server-diagnostics.
 Exposes base healing classes for easy import.
 """
 

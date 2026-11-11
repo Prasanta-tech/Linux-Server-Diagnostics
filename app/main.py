@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Main Entry Point
+linux-server-diagnostics Main Entry Point
 ===============================
 
 Starts the monitoring engine.
@@ -13,8 +13,8 @@ from app.utils.logger import logger
 
 
 def main() -> None:
-    """Main entry point for the PhoenixAuto-Ops system."""
-    logger.info("PhoenixAuto-Ops starting...")
+    """Main entry point for the linux-server-diagnostics system."""
+    logger.info("linux-server-diagnostics starting...")
 
     try:
         engine = MonitoringEngine()

@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Configuration Loader.
+linux-server-diagnostics Configuration Loader.
 
 This module is responsible for loading and providing access to the project's
 configuration. It supports:
@@ -20,7 +20,7 @@ from app.utils.logger import logger
 
 
 class ConfigLoader:
-    """Central configuration manager for PhoenixAuto-Ops.
+    """Central configuration manager for linux-server-diagnostics.
 
     Loads environment variables and YAML thresholds, providing safe access
     with defaults. Designed to be used as a singleton across the project.

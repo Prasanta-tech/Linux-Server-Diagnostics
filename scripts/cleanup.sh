@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ======================================================================
-# PhoenixAuto-Ops: Cleanup Script
+# linux-server-diagnostics: Cleanup Script
 # Purpose:  Safe cleanup of cache, temp files, and old project logs.
 #           Called from Python healing module.
 # Usage:    sudo ./cleanup.sh

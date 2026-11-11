@@ -37,7 +37,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_NAME: phoenixauto-ops
+  IMAGE_NAME: linux-server-diagnostics
   # A local, ephemeral tag for this run only - nothing is pushed to a
   # registry from this workflow (see docs/ci.md, "Registry Decision").
   # Immutable per-run instead of `latest` so two concurrent runs on
@@ -134,7 +134,7 @@ jobs:
       - name: Verify startup log output
         run: |
           docker logs phoenixops-ci 2>&1 | tee /tmp/startup.log
-          grep -q "PhoenixAuto-Ops starting" /tmp/startup.log
+          grep -q "linux-server-diagnostics starting" /tmp/startup.log
           grep -q "Monitoring engine initialized" /tmp/startup.log
           grep -q "Entering continuous monitoring mode" /tmp/startup.log
 

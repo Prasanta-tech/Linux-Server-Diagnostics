@@ -1,7 +1,7 @@
 # ---------------------------------------------------
-# PhoenixAuto-Ops Core Automation Engine
+# linux-server-diagnostics Core Automation Engine
 # Author: Didarul Islam
-# Multi-stage build for PhoenixAuto-Ops
+# Multi-stage build for linux-server-diagnostics
 # ---------------------------------------------------
 
 # ---- Stage 1: Builder ----
@@ -29,10 +29,10 @@ ARG BUILD_DATE=unknown
 ARG VCS_REF=unknown
 ARG VERSION=0.1.0
 
-LABEL org.opencontainers.image.title="PhoenixAuto-Ops" \
+LABEL org.opencontainers.image.title="linux-server-diagnostics" \
       org.opencontainers.image.description="Modular server health monitoring, alerting, and self-healing engine" \
       org.opencontainers.image.authors="Didarul Islam" \
-      org.opencontainers.image.source="https://github.com/didar67/phoenixauto-ops" \
+      org.opencontainers.image.source="https://github.com/didar67/linux-server-diagnostics" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${VCS_REF}" \
@@ -99,8 +99,8 @@ ENTRYPOINT ["python"]
 CMD ["-u", "-m", "app.main"]
 
 # Import-only healthchecks lie: a hung run_forever() loop still imports fine.
-# StructuredLogger touches logs/phoenixauto-ops.log every cycle
+# StructuredLogger touches logs/linux-server-diagnostics.log every cycle
 # (cycle_interval_seconds, default 60s), so a stale log file is a much more
 # honest liveness signal than "did the import succeed."
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD find /app/logs/phoenixauto-ops.log -mmin -2 | grep -q . || exit 1
+    CMD find /app/logs/linux-server-diagnostics.log -mmin -2 | grep -q . || exit 1

@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Alerting Base
+linux-server-diagnostics Alerting Base
 
 Abstract base class for all alert senders.
 Provides common functionality like message formatting,

@@ -1,12 +1,12 @@
-# 🔀 PhoenixAuto-Ops — Development Workflow
+# 🔀 linux-server-diagnostics — Development Workflow
 
-This document covers the Git branching strategy used to build PhoenixAuto-Ops, the reasoning behind it, and how to follow the same workflow when adding new features.
+This document covers the Git branching strategy used to build linux-server-diagnostics, the reasoning behind it, and how to follow the same workflow when adding new features.
 
 ---
 
 ## Branching Strategy
 
-PhoenixAuto-Ops was built using a **feature branch workflow**: every piece of functionality was developed in an isolated branch, tested independently, and merged into `main` only after it was working correctly. `main` always remains in a stable, runnable state.
+linux-server-diagnostics was built using a **feature branch workflow**: every piece of functionality was developed in an isolated branch, tested independently, and merged into `main` only after it was working correctly. `main` always remains in a stable, runnable state.
 
 ```
 main

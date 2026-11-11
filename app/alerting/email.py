@@ -1,5 +1,5 @@
 """
-PhoenixAuto-Ops Email Alert Sender
+linux-server-diagnostics Email Alert Sender
 
 Concrete implementation of BaseAlertSender for SMTP email delivery.
 Supports Gmail, Outlook, or any standard SMTP server with SSL.
@@ -58,7 +58,7 @@ class EmailAlertSender(BaseAlertSender):
             msg = MIMEMultipart()
             msg["From"] = self.from_email
             msg["To"] = self.to_email
-            msg["Subject"] = "PhoenixAuto-Ops Alert"
+            msg["Subject"] = "linux-server-diagnostics Alert"
 
             msg.attach(MIMEText(message, "plain"))
 

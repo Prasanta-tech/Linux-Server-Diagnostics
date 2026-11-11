@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ======================================================================
-# PhoenixAuto-Ops: Cron Setup Script
+# linux-server-diagnostics: Cron Setup Script
 # Purpose: Automatically and safely adds cronjob using dynamic paths.
 # ======================================================================
 
