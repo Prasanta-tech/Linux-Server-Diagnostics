@@ -1,0 +1,262 @@
+# 📁 PhoenixAuto-Ops — Project Structure
+
+This document explains every folder and file in the repository: what it does, why it exists, and how it fits into the system.
+
+---
+
+## Full Tree
+
+```
+phoenixauto-ops/
+│
+├── .github/
+│   └── workflows/                  # ci.yml (app CI), docker-ci.yml (Docker CI) — see docs/ci.md
+│
+├── app/                            # All Python application code
+│   ├── main.py                     # Entry point — loads config and starts MonitoringEngine
+│   ├── engine.py                   # Core orchestration: collect → evaluate → alert → heal
+│   │
+│   ├── monitoring/                 # Metric collection layer
+│   │   ├── __init__.py
+│   │   ├── base.py                 # BaseMetricCollector ABC — collect() interface contract
+│   │   ├── system.py               # SystemMetrics: CPU, memory, disk, load average
+│   │   └── network.py              # NetworkMetrics: TX/RX throughput and active connections
+│   │
+│   ├── alerting/                   # Alert dispatch layer
+│   │   ├── __init__.py
+│   │   ├── base.py                 # BaseAlertSender: in-memory cooldown logic, message formatting
+│   │   ├── telegram.py             # TelegramAlertSender: Bot API sendMessage
+│   │   ├── slack.py                # SlackAlertSender: Incoming Webhook POST
+│   │   └── email.py                # EmailAlertSender: SMTP/TLS via smtplib
+│   │
+│   ├── healing/                    # Auto-remediation layer
+│   │   ├── __init__.py
+│   │   ├── base.py                 # BaseHealer: dry-run flag, retry loop, cooldown
+│   │   └── actions.py              # HealingActions: maps breach types → shell scripts
+│   │
+│   └── utils/                      # Shared infrastructure utilities
+│       ├── config_loader.py        # Loads `thresholds.yaml` and `.env` into one merged config dict
+│       └── logger.py               # JSON formatter + Console Logging + RotatingFileHandler setup
+│
+├── scripts/                        # Production Bash scripts for system-level operations
+│   ├── service_manager.sh          # systemctl wrapper with input validation and logging
+│   ├── cleanup.sh                  # Disk/cache cleanup and temporary file maintenance
+│   ├── run_monitor.sh              # Foreground launcher: activates venv and runs `python3 -m app.main`
+│   ├── watchdog.sh                 # Independent log-freshness check; alerts via Slack if the engine itself has stopped
+│   └── .gitkeep
+│
+├── cron/                           # Scheduling setup
+│   ├── setup_cron.sh               # Idempotent installer for the watchdog cron entry
+│   └── .gitkeep
+│
+├── config/
+│   └── thresholds.yaml             # All metric thresholds + auto_healing flags
+│
+├── tests/                           # pytest suite — unit + integration
+│   ├── conftest.py                  # Shared fixtures (patch_config for singleton ConfigLoader)
+│   ├── unit/
+│   │   ├── test_config_loader.py
+│   │   ├── monitoring/              # test_system_metrics.py, test_network_metrics.py
+│   │   ├── alerting/                # test_alert_base.py, test_telegram_alert.py, test_slack_alert.py, test_email_alert.py
+│   │   └── healing/                 # test_healing_actions.py
+│   └── integration/
+│       └── test_engine_cycle.py     # Full MonitoringEngine.run_cycle() orchestration
+│
+├── logs/                           # Runtime log output — git-ignored, directory tracked
+│   └── .gitkeep
+│
+├── docs/                           # Technical documentation
+│   ├── architecture.md             # System design, data flow, design patterns
+│   ├── structure.md                # This file — folder and file explanations
+│   ├── setup.md                    # Full installation guide
+│   ├── configuration.md            # thresholds.yaml and .env complete reference
+│   ├── development-workflow.md     # Git branching strategy, code standards, and roadmap
+│   └── docker.md                   # Dockerfile, docker-compose.yml, host monitoring, known limitations
+├── Dockerfile                      # Multi-stage build: builder (gcc/psutil compile) → runtime (non-root)
+├── docker-compose.yml              # phoenixops service: env, volumes, host-monitoring mounts, healthcheck
+├── .dockerignore                   # Excludes .env, secrets, venv/, tests/ from build context
+│
+├── venv/                           # Python virtual environment — generated locally, git-ignored
+├── .env                            # Runtime secrets — git-ignored, NEVER commit
+├── .env.example                    # Secret template — safe to commit, no real values
+├── .gitignore
+├── requirements.txt                # Application dependencies & test suite packages (psutil, pyyaml, pytest)
+├── pyproject.toml                  # Pins black/isort to line-length=120 so local formatting matches CI
+├── pytest.ini                      # Test discovery config + coverage reporting (--cov-report=xml)
+├── setup.sh                        # One-command bootstrap script
+└── README.md                       # Project overview, quick start, and entry points
+```
+
+---
+
+## File-by-File Explanation
+
+### `app/main.py`
+
+Entry point invoked by `scripts/run_monitor.sh` and direct `python3 -m app.main` calls. Responsible for:
+
+- Loading the merged config via `config_loader`
+- Instantiating `MonitoringEngine`
+- Registering the SIGTERM handler for graceful shutdown and logging a CRITICAL entry before re-raising any fatal error
+
+Does not contain business logic — that all lives in `engine.py`.
+
+### `app/engine.py`
+
+The brain of PhoenixAuto-Ops. `MonitoringEngine` drives a single execution cycle:
+
+1. Collect metric snapshot from all enabled monitors
+2. Track each metric's consecutive-breach streak against its configured threshold - a single transient spike doesn't act; only a breach sustained for `auto_healing.consecutive_breaches_required` consecutive cycles does
+3. Dispatch alerts through all three channels (Telegram, Slack, Email) for metrics currently in sustained breach
+4. Trigger healing for those same metrics - CPU healing identifies the actual top-CPU process (`SystemMetrics.get_top_cpu_process()`) rather than assuming a fixed service name; each metric's healing action runs in its own isolated try/except so one failing action doesn't block the others
+
+Keeps the orchestration logic thin and delegates all implementation details to the respective layers. The engine is a long-running process: breach streaks and cooldown timestamps live in memory and reset when it restarts.
+
+### `app/monitoring/base.py`
+
+Defines `BaseMetricCollector` as an abstract base class. The only contract it enforces is:
+
+```python
+def collect(self) -> dict:
+    """Return a metric snapshot as a flat or nested dict."""
+```
+
+Any class that inherits `BaseMetricCollector` must implement `collect()`. This makes it possible to add new metric sources (database, Redis, custom endpoints) without touching the engine or alerting layers.
+
+### `app/monitoring/system.py`
+
+`SystemMetrics` implements CPU utilization, memory pressure, root-filesystem (`/`) disk usage, and system load average using `psutil`. All readings are collected in a single pass to minimize time skew between related values.
+
+### `app/monitoring/network.py`
+
+`NetworkMetrics` collects network activity metrics used for threshold evaluation and alert generation.
+
+### `app/alerting/base.py`
+
+`BaseAlertSender` handles everything that is common across all channels:
+- Cooldown enforcement (in-memory, per-process)
+- Message formatting (`format_message()` produces a consistent alert body)
+- Logging of sent/skipped decisions at appropriate levels
+
+Subclasses implement only `_send(message) -> bool` — the channel-specific HTTP or SMTP call (`False` = channel unconfigured, skipped).
+
+### `app/alerting/telegram.py`, `slack.py`, `email.py`
+
+Each file contains exactly one class that extends `BaseAlertSender` and implements `_send()` for its channel:
+- `TelegramAlertSender` — POST to `https://api.telegram.org/bot{token}/sendMessage`
+- `SlackAlertSender` — POST JSON payload to Incoming Webhook URL
+- `EmailAlertSender` — SMTP over implicit TLS (`smtplib.SMTP_SSL`, port 465), authenticated send
+
+Credentials are read from the config dict (sourced from `.env`), never hardcoded.
+
+### `app/healing/base.py`
+
+`BaseHealer` wraps all healing execution with:
+- **Dry-run check** — if `config.auto_healing.dry_run` is true, logs the intended action and returns without executing
+- **Retry loop** — calls the action function up to `max_retry_attempts` times via `_safe_execute()`, with a 2-second delay between attempts
+- **Cooldown check** — `_is_cooldown_over()` blocks re-running the same action *type* (`restart_service`, `clear_cache`, `kill_process`) within `cooldown_seconds`, even across different dynamic targets (e.g. a different top-CPU process name each cycle)
+- **Result logging** — logs success, skip-due-to-cooldown, or exhausted-retry failure for every action
+
+### `app/healing/actions.py`
+
+`HealingActions` exposes four explicit methods — `restart_service()`, `kill_process()`, `clear_cache()`, `log_rotate()` — each wrapping either a shell script (`service_manager.sh`, `cleanup.sh`) or a direct system command (`pkill`), executed via `subprocess.run()` with a `timeout` and both `stdout`/`stderr` captured for logging. Script filenames are hardcoded literals inside each method, never built from dynamic or user-controlled input, so there's no path-injection risk even though the restart target name and `scripts_dir` path are resolved at runtime. `kill_process()` treats `pkill` exit code 1 ("no match") as success, not a failure.
+
+### `app/utils/config_loader.py`
+
+`ConfigLoader` class (module-level singleton `config`):
+1. Reads and parses `config/thresholds.yaml` with `pyyaml`
+2. Calls `python-dotenv`'s `load_dotenv()` to populate `os.environ` from `.env`
+3. Bridges telegram/slack/email credentials from `os.environ` into the same config tree (`telegram.*`, `slack.*`, `email.*`)
+4. Exposes `get()` (dot notation), `get_threshold()` and `get_all()`
+
+Also bridges `telegram.*`/`slack.*`/`email.*` credentials from `os.environ` (populated by `.env`) into the same config tree `get()` reads from - see [docs/configuration.md](configuration.md) for why this bridge exists.
+
+### `app/utils/logger.py`
+
+`StructuredLogger` (a singleton) configures:
+- A `StreamHandler` with a human-readable formatter for console output
+- A `TimedRotatingFileHandler` writing daily-rotated JSON to `logs/phoenixauto-ops.log` (7 backups)
+- Log level read from the `LOG_LEVEL` environment variable (defaults to `INFO`)
+
+The JSON formatter writes `timestamp`, `level`, `message`, `module`, `function` and `line` for every record, plus any keyword arguments passed to the logger (e.g. `logger.info("...", cpu=45.2)`).
+
+### `scripts/service_manager.sh`
+
+A `systemctl` wrapper that:
+- Validates the target service name before calling `systemctl`
+- Logs to `logs/service_manager.log`; exits 0 on success and 1 on any failure
+- Supports `restart`, `stop`, `start`, `status` subcommands
+- Has no dry-run flag; dry-run is handled in the Python layer (`auto_healing.dry_run`)
+
+Called by `HealingActions` for service restart remediation.
+
+### `scripts/cleanup.sh`
+
+Handles disk-level cleanup:
+- Runs `apt-get clean` (Debian/Ubuntu) and deletes `/tmp` files not accessed for more than a day
+- Drops the page cache via `/proc/sys/vm/drop_caches` (requires sudo)
+- Deletes `*.log` files older than 7 days in `./logs`
+- Each step is non-fatal (`|| true` / warning), so the script exits 0 even where `sudo` is unavailable (e.g. inside Docker)
+
+### `scripts/run_monitor.sh`
+
+Foreground launcher (activates the venv, then runs the engine until stopped):
+1. Activates `venv/` relative to the script's directory
+2. Logs to `logs/run_monitor.log`
+3. Executes the application as a Python module using `python3 -m app.main` to properly resolve relative imports
+
+### `scripts/watchdog.sh`
+
+Runs independently of the main engine, via its own separate cron entry. Checks whether `logs/phoenixauto-ops.log` has been written to within the last 5 minutes; if not, sends a Slack alert since the engine process itself may have crashed or hung. This exists because the main engine has no way to detect or report its own failure - a crashed engine simply stops logging, silently.
+
+### `.github/workflows/ci.yml` and `.github/workflows/docker-ci.yml`
+
+GitHub Actions pipelines validating every change before merge — lint/format, the full pytest suite, Bandit/pip-audit security scanning, and (for Docker-relevant changes) a full image build, runtime/healthcheck/shutdown validation, and a Trivy CRITICAL-severity gate. Full breakdown → **[docs/ci.md](docs/ci.md)**.
+
+### `cron/setup_cron.sh`
+
+Reads the current user's crontab, checks whether a PhoenixAuto-Ops entry already exists (grep on a comment marker), and adds the `scripts/watchdog.sh` job (every 5 minutes) only if absent. This makes it safe to re-run after updates without creating duplicate entries. Default schedule is `*/5 * * * *` — configurable by editing the script variable `CRON_SCHEDULE` before running.
+
+### `config/thresholds.yaml`
+
+The single source of truth for all operational parameters. Controls metric thresholds, healing enable/disable, dry-run mode, retry counts, and cooldown windows. Safe to commit — contains no secrets. See **[docs/configuration.md](docs/configuration.md)** for the full reference.
+
+### `tests/`
+
+pytest suite split into `unit/` and `integration/`. Unit tests mock every external dependency (`psutil`, `requests`, `smtplib`, `subprocess`) so they run in milliseconds with no network or filesystem access. `conftest.py` provides a `patch_config` fixture that monkeypatches the `ConfigLoader` singleton's `get()`/`get_threshold()` methods — every component reads config through this same singleton at import time, so this fixture is what keeps unit tests independent of whatever's actually in a local `.env` or `thresholds.yaml`.
+
+`integration/test_engine_cycle.py` verifies `MonitoringEngine.run_cycle()` wiring — collect → evaluate → alert → heal — with each collaborator mocked, since their individual behavior is already covered by their own unit test modules.
+
+Current state: 53 tests, ~77% coverage (`pytest.ini` configured with `--cov-report=xml` for future Codecov integration).
+
+### `pytest.ini`
+
+Test discovery and coverage config. `--cov-report=xml` generates `coverage.xml` on every run — not committed to git (see `.gitignore`), and this is the artifact `ci.yml`'s Test Suite job already uploads as a workflow artifact (see [docs/ci.md](docs/ci.md)); it could later feed an external coverage badge/service.
+
+### `Dockerfile`
+
+Multi-stage build. Stage 1 (`builder`) installs `psutil`'s C-extension build dependencies (`gcc`) and pip-installs into `--user` site-packages — these tools never reach the runtime image. Stage 2 copies only the installed packages, runs as a dedicated non-root user (`phoenixops`, uid 1000), supports host-level system monitoring via mounted `/proc`, defines the container's `HEALTHCHECK`, `org.opencontainers.image.*` metadata labels and starts the engine via `ENTRYPOINT ["python"]` / `CMD ["-u", "-m", "app.main"]`. See **[docs/docker.md](docs/docker.md)** for the full build breakdown.
+
+### `docker-compose.yml`
+
+Defines the `phoenixops` service: env vars (including `HOST_PROC_PATH`/`HOST_ROOT_PATH` for host-system monitoring), volume mounts for config/logs/`.env`, resource limits, and lifecycle settings (`restart`, `stop_grace_period`). Inherits the Dockerfile's `HEALTHCHECK` rather than redefining it. See **[docs/docker.md](docs/docker.md)**.
+
+### `.dockerignore`
+
+Excludes `.env`, `config/secrets.yaml`, `venv/`, `tests/`, and `docs/` from the build context — mirrors the intent of `.gitignore` keeps secrets out even if a future `COPY . .` is added by mistake.
+
+### `.gitignore`
+
+Excludes Python artifacts (`__pycache__/`, `venv/`), secrets (`.env`, `config/secrets.yaml`), rotated log files (`logs/*.log*`), and coverage artifacts (`coverage.xml`, `htmlcov/`). The blanket `*.txt` rule has an explicit `!requirements.txt` exception — without it, `requirements.txt` would be silently unaddable to git.
+
+### `.env` / `.env.example`
+
+`.env` holds all secrets: API tokens, webhook URLs, SMTP passwords. It is listed in `.gitignore` and must never be committed. `.env.example` is the committed template — it contains all required variable names with placeholder values so contributors know what to populate.
+
+### `setup.sh`
+
+Bootstrap script that prepares the local development environment.
+
+See [docs/setup.md](docs/setup.md) for full details.
+
+Running `./setup.sh` is the only step needed before configuration.

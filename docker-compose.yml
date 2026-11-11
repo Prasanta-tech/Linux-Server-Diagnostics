@@ -1,0 +1,107 @@
+services:
+  phoenixops:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Real build provenance instead of the OCI labels being baked in once
+      # with static "unknown" values. Export these before building, e.g.:
+      #   export VERSION=1.0.0
+      #   export VCS_REF=$(git rev-parse --short HEAD)
+      #   export BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+      #   docker compose build
+      args:
+        VERSION: "${VERSION:-0.1.0}"
+        VCS_REF: "${VCS_REF:-unknown}"
+        BUILD_DATE: "${BUILD_DATE:-unknown}"
+    image: phoenixauto-ops:latest
+    container_name: phoenixops-monitor
+    
+    # Load environment variables from .env file
+    env_file:
+      - .env
+    
+    # Set environment variables for Python
+    environment:
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: '1'
+      LOG_LEVEL: INFO
+       # Tells app/monitoring/system.py to point psutil at the host's proc
+      # mount and check disk usage against the host's root fs instead of
+      # the container's own overlay filesystem. See the volumes below.
+      HOST_PROC_PATH: /host/proc
+      HOST_ROOT_PATH: /rootfs
+    
+    # Mount persistent volumes
+    volumes:
+      # Config directory (read-write for dynamic config updates)
+      - ./config:/app/config:rw
+      # Logs directory (write for persistent logging)
+      - ./logs:/app/logs:rw
+      # .env file mount
+      - ./.env:/app/.env:ro
+
+      # --- Host monitoring mounts ---
+      # This is the same approach Prometheus node_exporter uses: bind-mount
+      # the host's /proc and / read-only, then point psutil at them via
+      # HOST_PROC_PATH/HOST_ROOT_PATH above. /proc/stat, /proc/meminfo, and
+      # /proc/net/dev are generated relative to whichever namespace *mounted*
+      # this procfs instance - since it's the host's own /proc bind-mounted
+      # in, reading it from inside the container still returns the host's
+      # real numbers. No --pid=host or network_mode: host required for this,
+      # which keeps the container's own PID/network isolation intact.
+      - /proc:/host/proc:ro
+      - /:/rootfs:ro
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    # Restart policy
+    restart: unless-stopped
+
+    # Default is 10s. HealingActions subprocess calls have a 30s timeout
+    # (see app/healing/actions.py _execute_command), so a cycle caught
+    # mid-healing-action needs more room than the default before Docker
+    # escalates from SIGTERM to SIGKILL.
+    stop_grace_period: 40s
+    
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # No healthcheck block here on purpose - the Dockerfile's HEALTHCHECK
+    # is the image's default and Compose inherits it automatically. A
+    # service-level override is only worth adding if this environment
+    # genuinely needs different timing than the image default; duplicating
+    # the exact same values here would just be dead config that silently
+    # shadows the Dockerfile's if the two ever drift out of sync.
+    
+    # Run as non-root user (defined in Dockerfile)
+    user: phoenixops:phoenixops
+
+# The previous phoenixops-cron service has been removed. Reasoning:
+#
+# 1. cron/setup_cron.sh only registers a crontab entry and exits - it never
+#    starts `cron -f` in the foreground, so the container would exit
+#    immediately after running it and just restart-loop forever.
+#
+# 2. Even fixed, the crontab entry runs scripts/run_monitor.sh, which
+#    launches app/main.py -> engine.run_forever() - an infinite loop.
+#    Cron would spawn a new never-exiting process every 5 minutes, stacking
+#    duplicate monitoring loops instead of running one on a schedule.
+#
+# Cron scheduling and a continuously-running engine solve the same problem
+# (periodic monitoring) two different ways. The container only needs one:
+# the `phoenixops` service above already loops on its own via
+# cycle_interval_seconds. cron/setup_cron.sh remains useful for the
+# bare-metal/VM deployment path where a long-running daemon isn't assumed,
+# but it has no role inside this container.
